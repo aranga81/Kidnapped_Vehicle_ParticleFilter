@@ -27,14 +27,18 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	//   x, y, theta and their uncertainties from GPS) and all weights to 1. 
 	// Add random Gaussian noise to each particle.
 
+	// number of particles - meets requirements..!!
 	num_particles = 100;
 
+	// random num gen
 	default_random_engine gen;
 
+	// normal distb - noise with mean & std to gps measurement..!!
 	normal_distribution<double> Nx_init(x, std[0]);
 	normal_distribution<double> Ny_init(y, std[1]);
 	normal_distribution<double> Ntheta_init(theta, std[2]);
 
+	// initialize all 100 particles randomly..!!
 	for(int i=0; i<num_particles; ++i)
 	{
 		Particle particle;
@@ -50,8 +54,6 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 
 	is_initialized = true;
 
-	cout << "is_init" << " " << is_initialized << endl;
-
 }
 
 void ParticleFilter::prediction(double delta_t, double std_pos[], double velocity, double yaw_rate) {
@@ -61,6 +63,8 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
 
 	default_random_engine gen;
+
+	// CTRV motion model --> condition check for zero yaw rate..!!
 
 	for(int i=0; i<num_particles; ++i)
 	{
@@ -80,6 +84,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 		normal_distribution<double> Ny(particles[i].y, std_pos[1]);
 		normal_distribution<double> Ntheta(particles[i].theta, std_pos[2]);
 
+		// add jitter to predictions..!!
 		particles[i].x = Nx(gen);
 		particles[i].y = Ny(gen);
 		particles[i].theta = Ntheta(gen);
@@ -110,6 +115,7 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 
 		}
 
+		// record the lamdmark id 
 		observations[i].id = map_id;
 	}
 
@@ -145,6 +151,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
 		vector<LandmarkObs> trans_obs;
 
+		// Transform observations from car coordinates to map reference..!!
     	for (int j = 0; j < observations.size(); ++j) {
 
       		double trans_x = cos(particles[i].theta)*observations[j].x - sin(particles[i].theta)*observations[j].y + particles[i].x;
@@ -153,7 +160,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
       		trans_obs.push_back(LandmarkObs{ observations[j].id, trans_x, trans_y });
       	}
 
-
+      	// Run data association..!!
       	dataAssociation(predictions, trans_obs);
 
       	particles[i].weight = 1.0;
@@ -177,8 +184,10 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
       		double sx = std_landmark[0];
       		double sy = std_landmark[1];
 
+      		// Multi variate gaussian...!!
       		double mvg = ( 1/(2*M_PI*sx*sy)) * exp( -( pow(mu_x-o_x,2)/(2*pow(sx, 2)) + (pow(mu_y-o_y,2)/(2*pow(sy, 2))) ) );
 
+      		//Particle Weights..!!
 			particles[i].weight *= mvg;
 
 			weights[i] = particles[i].weight;
